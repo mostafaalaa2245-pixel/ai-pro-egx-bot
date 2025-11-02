@@ -1,9 +1,19 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import TelegramBot from "node-telegram-bot-api";
 import axios from "axios";
 import { RSI, MACD, EMA, BollingerBands } from "technicalindicators";
 
-const TOKEN = process.env.TELE_TOKEN; // التوكن بتاع بوت تليجرام
+// مفاتيح التشغيل من الـ Environment Variables
+const TOKEN = process.env.BOT_TOKEN; // التوكن بتاع بوت تليجرام
 const API_KEY = process.env.TWELVE_KEY; // مفتاح Twelve Data
+
+if (!TOKEN) {
+  console.error("❌ Telegram Bot Token not provided!");
+  process.exit(1);
+}
+
 const bot = new TelegramBot(TOKEN, { polling: true });
 
 // دالة لجلب البيانات
@@ -37,30 +47,15 @@ function analyze(closes) {
   else if (bbWidth > 0.015) risk = "Medium";
 
   return { signal, lastClose, lastRsi, risk, bbWidth };
-// ===== Temporary command to get chat ID =====
+}
+
+// أمر /id علشان تعرف Chat ID بتاعك
 bot.onText(/\/id/, (msg) => {
   const chatId = msg.chat.id;
   bot.sendMessage(chatId, `📌 Your Chat ID is: ${chatId}`);
   console.log(`User Chat ID: ${chatId}`);
 });
 
-}
-
-// أوامر تليجرام
+// أمر البداية
 bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, "👋 أهلاً بيك في AI PRO Bot!\nاكتب /signal CIB.CA علشان تشوف تحليل سهم.");
-});
-
-bot.onText(/\/signal (.+)/, async (msg, match) => {
-  const symbol = match[1].trim();
-  try {
-    const closes = await fetchData(symbol);
-    const result = analyze(closes);
-    const message = `📊 ${symbol}\n💰 السعر: ${result.lastClose}\n🧭 الإشارة: ${result.signal}\n⚠️ المخاطرة: ${result.risk}\n📈 RSI: ${result.lastRsi.toFixed(2)}\nBB Width: ${(result.bbWidth*100).toFixed(2)}%`;
-    bot.sendMessage(msg.chat.id, message);
-  } catch (e) {
-    bot.sendMessage(msg.chat.id, "❌ حصل خطأ أثناء التحليل: " + e.message);
-  }
-});
-
-console.log("🤖 AI PRO Bot is running...");
+  bot.sendMessage(msg
